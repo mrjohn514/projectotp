@@ -9,8 +9,18 @@ function generateOTP() {
 
 module.exports.generateotp = async (req, res) => {
   try {
-    console.log('in controler', req.body.email)
     const { email } = req.body
+
+    //if no mail
+    if (!email) {
+      return res.json({ message: 'No EMAIL' })
+    }
+
+    // Validate email format
+    const validEmailFormat = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
+    if (!validEmailFormat.test(email)) {
+      return res.status(400).json({ message: 'Invalid email format' })
+    }
 
     // Check if the user exists
     const user = await User.findOne({ email })
@@ -31,7 +41,7 @@ module.exports.generateotp = async (req, res) => {
       await newUser.save()
 
       // Send the OTP to the user's email address
-      await mailer.sendOTP(email, otp)
+      // await mailer.sendOTP(email, otp)
 
       return res.json({ message: 'OTP sent successfully' })
 
@@ -42,9 +52,24 @@ module.exports.generateotp = async (req, res) => {
       user.lastOtpRequestAt &&
       Date.now() - new Date(user.lastOtpRequestAt).getTime() < 1 * 60 * 1000
     ) {
+      const remainingTime = Math.floor(
+        (1 * 60 * 1000 -
+          (Date.now() - new Date(user.lastOtpRequestAt).getTime())) /
+          1000
+      )
+      return res.status(400).json({
+        message: `Please try again in ${remainingTime} seconds.`,
+      })
+    }
+
+    // Check if the previous OTP has expired
+    if (
+      user.otp.createdAt &&
+      Date.now() - new Date(user.otp.createdAt).getTime() <= 5 * 60 * 1000
+    ) {
       return res.status(400).json({
         message:
-          'Please wait for at least 1 minute before generating a new OTP.',
+          'OTP has already been sent. Please wait for 5 minutes before trying again.',
       })
     }
 
@@ -56,7 +81,7 @@ module.exports.generateotp = async (req, res) => {
     await user.save()
 
     // Send the OTP to the user's email address
-    await mailer.sendOTP(email, otp)
+    // await mailer.sendOTP(email, otp)
 
     return res.json({ message: 'OTP sent successfully' })
 
