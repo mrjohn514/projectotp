@@ -51,7 +51,7 @@ module.exports.createuser = async (req, res) => {
   if (user.isused) {
     return res.json({
       message:
-        'otp is once used and you are already authenticated no more request to authenticate',
+        'otp is once used and your email is authenticated login with another accoutn (email)',
     })
   }
 
