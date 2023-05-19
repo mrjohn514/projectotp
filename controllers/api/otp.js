@@ -41,7 +41,7 @@ module.exports.generateotp = async (req, res) => {
       await newUser.save()
 
       // Send the OTP to the user's email address
-      // await mailer.sendOTP(email, otp)
+      await mailer.sendOTP(email, otp)
 
       return res.json({ message: 'OTP sent successfully' })
 
@@ -69,7 +69,7 @@ module.exports.generateotp = async (req, res) => {
     ) {
       return res.status(400).json({
         message:
-          'OTP has already been sent. Please wait for 5 minutes before trying again.',
+          'OTP has already been sent. Please check your email and try again.',
       })
     }
 
@@ -81,7 +81,7 @@ module.exports.generateotp = async (req, res) => {
     await user.save()
 
     // Send the OTP to the user's email address
-    // await mailer.sendOTP(email, otp)
+    await mailer.sendOTP(email, otp)
 
     return res.json({ message: 'OTP sent successfully' })
 
@@ -91,11 +91,3 @@ module.exports.generateotp = async (req, res) => {
     return res.status(500).json({ message: 'Internal server error' })
   }
 }
-
-// rateLimit({ windowMs: 60000, max: 1 }) is a middleware function commonly used in web development
-// with Node.js and Express. It is typically used to limit the rate at which API clients can make
-// requests to a server. The options passed to this function specify that the client may only make one
-//  request within a rolling window of 60 seconds. If the client makes more than one request within that
-//   time frame, the server will respond with an error code indicating that the rate limit has been exceeded.
-// This helps prevent abuse of the server and ensure fair usage for all clients. The rateLimit function
-// can be installed via the npm package manager by running the command npm install --save express-rate-limit
