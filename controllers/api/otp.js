@@ -1,6 +1,13 @@
 const User = require('../../models/user')
+const Otp = require('../../models/otp')
 const mailer = require('../../config/nodemailer')
 const crypto = require('crypto')
+const { use } = require('passport')
+const CryptoJS = require('crypto-js')
+
+// Encrypt details
+const password = process.env.CRYPT_PASSWORD
+const iv = process.env.IV
 
 function generateOTP() {
   const otp = crypto.randomInt(100000, 999999)
@@ -24,31 +31,9 @@ module.exports.generateotp = async (req, res) => {
 
     // Check if the user exists
     const user = await User.findOne({ email })
-    if (!user) {
-      // Generate and save a new OTP
-      const otp = generateOTP()
-
-      const newUser = new User({
-        email: email,
-        otp: {
-          value: otp,
-          createdAt: new Date(),
-        },
-        isBlocked: false,
-        lastOtpRequestAt: new Date(),
-      })
-
-      await newUser.save()
-
-      // Send the OTP to the user's email address
-      await mailer.sendOTP(email, otp)
-
-      return res.json({ message: 'OTP sent successfully' })
-
-      // return res.status(400).json({ message: 'User not found' })
-    }
 
     if (
+      user &&
       user.lastOtpRequestAt &&
       Date.now() - new Date(user.lastOtpRequestAt).getTime() < 1 * 60 * 1000
     ) {
@@ -62,28 +47,60 @@ module.exports.generateotp = async (req, res) => {
       })
     }
 
-    // Check if the previous OTP has expired
-    if (
-      user.otp.createdAt &&
-      Date.now() - new Date(user.otp.createdAt).getTime() <= 5 * 60 * 1000
-    ) {
-      return res.status(400).json({
-        message:
-          'OTP has already been sent. Please check your email and try again.',
-      })
+    // if (user && user.isVerified)
+    //   return res.json({
+    //     message: 'this accoount is already verified try another account',
+    //   })
+
+    // Generate and save a new OTP
+    const notp = generateOTP()
+
+    //create new otp document
+    const newOtp = new Otp({
+      otp: notp,
+      expiration_time: new Date(Date.now() + 5 * 60 * 1000), // OTP expires in 5 minutes
+      verified: false,
+    })
+
+    // save the new OTP document and obtain its ID
+    const otpDoc = await newOtp.save()
+    const otpDocId = otpDoc._id
+
+    // Construct check value for verifying OTP
+
+    const details = {
+      id: otpDocId,
+      email: email,
     }
 
-    // Update the user object with the new OTP and lastOtpRequestAt timestamp
-    const otp = generateOTP()
-    user.otp.value = otp
-    user.otp.createdAt = new Date()
-    user.lastOtpRequestAt = new Date()
-    await user.save()
+    const check = CryptoJS.AES.encrypt(
+      JSON.stringify(details),
+      process.env.CRYPT_PASSWORD,
+      { iv: process.env.IV }
+    ).toString()
+
+    if (!user) {
+      const newUser = new User({
+        email: email,
+        lastOtpRequestAt: new Date(),
+      })
+
+      await newUser.save()
+    }
+
+    if (user) {
+      if (!user.isBlocked) user.failedAttempts = 0
+
+      user.lastOtpRequestAt = new Date()
+      await user.save()
+    }
 
     // Send the OTP to the user's email address
-    await mailer.sendOTP(email, otp)
-
-    return res.json({ message: 'OTP sent successfully' })
+    // await mailer.sendOTP(email, notp)
+    return res.json({
+      message: 'OTP sent successfully',
+      verification_key: check,
+    })
 
     // Check for  minimum 1 min gap between two generate OTP requests.
   } catch (error) {

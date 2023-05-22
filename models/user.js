@@ -6,16 +6,7 @@ const userSchema = new mongoose.Schema({
     required: true,
     unique: true,
   },
-  otp: {
-    value: {
-      type: String,
-      default: null,
-    },
-    createdAt: {
-      type: Date,
-      default: null,
-    },
-  },
+
   lastOtpRequestAt: {
     type: Date,
     default: null,
@@ -32,7 +23,7 @@ const userSchema = new mongoose.Schema({
     type: Date,
     default: null,
   },
-  isused: {
+  isVerified: {
     type: Boolean,
     default: false,
   },
