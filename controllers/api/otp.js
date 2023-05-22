@@ -96,7 +96,7 @@ module.exports.generateotp = async (req, res) => {
     }
 
     // Send the OTP to the user's email address
-    // await mailer.sendOTP(email, notp)
+    await mailer.sendOTP(email, notp)
     return res.json({
       message: 'OTP sent successfully',
       verification_key: check,
