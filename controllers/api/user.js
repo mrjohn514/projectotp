@@ -2,7 +2,7 @@ const User = require('../../models/user')
 const Otp = require('../../models/otp')
 const CryptoJS = require('crypto-js')
 const jwt = require('jsonwebtoken')
-const validator = require('validator')
+var validator = require('email-validator')
 
 module.exports.createuser = async (req, res) => {
   console.log(req.body)
@@ -19,7 +19,7 @@ module.exports.createuser = async (req, res) => {
   }
 
   // Check if email format is valid
-  if (!validator.isEmail(email)) {
+  if (!validator.validate(email)) {
     return res.status(422).json({
       message: 'Invalid email format',
     })
