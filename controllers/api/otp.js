@@ -4,6 +4,7 @@ const mailer = require('../../config/nodemailer')
 const crypto = require('crypto')
 const { use } = require('passport')
 const CryptoJS = require('crypto-js')
+const validator = require('validator')
 
 // Encrypt details
 const password = process.env.CRYPT_PASSWORD
@@ -23,12 +24,12 @@ module.exports.generateotp = async (req, res) => {
       return res.json({ message: 'No EMAIL' })
     }
 
-    // Validate email format
-    const validEmailFormat = /^[\w-.]+@([\w-]+\.)+[\w-]{2,4}$/
-    if (!validEmailFormat.test(email)) {
-      return res.status(400).json({ message: 'Invalid email format' })
+    // Check if email format is valid
+    if (!validator.isEmail(email)) {
+      return res.status(422).json({
+        message: 'Invalid email format',
+      })
     }
-
     // Check if the user exists
     const user = await User.findOne({ email })
 
